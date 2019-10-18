@@ -23,6 +23,8 @@ class cube(object):
         i = self.pos[0]
         j = self.pos[1]
 
+        print("DRAW:", i, j)
+
         pygame.draw.rect(surface, self.color, (i*dis+1,j*dis+1, dis-2, dis-2))
         if eyes:
             centre = dis//2
@@ -33,12 +35,14 @@ class cube(object):
             pygame.draw.circle(surface, (0,0,0), circleMiddle2, radius)
 
 class snake(object):
-    body = []
-    turns = {}
     def __init__(self, color, pos):
+        self.body = []
+        self.turns = {}
         self.color = color
         self.head = cube(pos)
         self.body.append(self.head)
+        self.addCube()
+        self.addCube()
         self.dirnx = 0
         self.dirny = 1
 
@@ -88,6 +92,8 @@ class snake(object):
         self.head = cube(pos)
         self.body = []
         self.body.append(self.head)
+        self.addCube()
+        self.addCube()
         self.turns = {}
         self.dirnx = 0
         self.dirny = 1
@@ -109,6 +115,7 @@ class snake(object):
         self.body[-1].dirny = dy        
 
     def draw(self, surface):
+        print("TRYNA DRAW:", list(map(lambda z:z.pos,self.body)))
         for i, c in enumerate(self.body):
             if i ==0:
                 c.draw(surface, True)
@@ -129,9 +136,12 @@ def drawGrid(w, rows, surface):
         
 
 def redrawWindow(surface):
-    global rows, width, s, snack
+    global rows, width, snakes, snack
     surface.fill((0,0,0))
-    s.draw(surface)
+
+    for s in snakes:        
+        s.draw(surface)
+
     snack.draw(surface)
     drawGrid(width,rows, surface)
     pygame.display.update()
@@ -162,32 +172,62 @@ def message_box(subject, content):
         pass
 
 def main():
-    global width, rows, s, snack
+    global width, rows, snakes, snack
     width = 500
     rows = 20
     win = pygame.display.set_mode((width, width))
-    s = snake((255,0,0), (10,10))
-    snack = cube(randomSnack(rows, s), color=(0,255,0))
+    snakes = []
+    snakes.append(snake((255,0,0), (10,10)))
+    snakes.append(snake((0,0,255), (20,20)))
+    snakes.append(snake((255,0,255), (30,30)))
+    snack = cube(randomSnack(rows, snakes[0]), color=(0,255,0))
     flag = True
 
     clock = pygame.time.Clock()
+
+    spawnSnack = False
+    snackTime = 0
     
+    # Game loop
     while flag:
+        # Fix FPS
         pygame.time.delay(50)
         clock.tick(10)
-        s.move()
-        if s.body[0].pos == snack.pos:
-            s.addCube()
-            snack = cube(randomSnack(rows, s), color=(0,255,0))
 
-        for x in range(len(s.body)):
-            if s.body[x].pos in list(map(lambda z:z.pos,s.body[x+1:])):
-                print('Score: ', len(s.body))
-                message_box('You Lost!', 'Play again...')
-                s.reset((10,10))
-                break
+        # Snakes moves
+        for s in snakes:
+            s.move()
+
+        # If snake eats a snack
+            if s.body[0].pos == snack.pos:
+                spawnSnack = True
+                snackTime = pygame.time.get_ticks()
+
+                s.addCube()
+                snack = cube((-1, -1))
+
+        # If it has to spawn a snack
+        if spawnSnack:
+            if pygame.time.get_ticks() - snackTime >= 500:
+                snack = cube(randomSnack(rows, snakes[0]), color=(0,255,0))
+                spawnSnack = False
+
+        for y in range(len(snakes)):
+            print("y =", y)
+            for x in range(len(snakes[y].body)):
+                print("x =", x)
+                for w in range(y+1, len(snakes)):
+                    print("w =", w)
+                    print(snakes[y].body[x].pos, "=", list(map(lambda z:z.pos,snakes[w].body[0:])))
+
+                    if snakes[y].body[x].pos in list(map(lambda z:z.pos,snakes[w].body)):
+                        print('Score: ', len(snakes[y].body) - 3)
+                        message_box('You Lost!', 'Play again...')
+                        snakes[y].reset((10,10))
+                        break
             
-        redrawWindow(win)        
+        redrawWindow(win)      
+        flag = True  
     pass
 
 main()
