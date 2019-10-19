@@ -23,8 +23,6 @@ class cube(object):
         i = self.pos[0]
         j = self.pos[1]
 
-        print("DRAW:", i, j)
-
         pygame.draw.rect(surface, self.color, (i*dis+1,j*dis+1, dis-2, dis-2))
         if eyes:
             centre = dis//2
@@ -39,7 +37,7 @@ class snake(object):
         self.body = []
         self.turns = {}
         self.color = color
-        self.head = cube(pos)
+        self.head = cube(pos, color=self.color)
         self.body.append(self.head)
         self.addCube()
         self.addCube()
@@ -89,6 +87,10 @@ class snake(object):
                 else: c.move(c.dirnx,c.dirny)        
 
     def reset(self, pos):
+        global snacks
+        self.addCube()
+        corpse = self.body
+
         self.head = cube(pos)
         self.body = []
         self.body.append(self.head)
@@ -98,24 +100,29 @@ class snake(object):
         self.dirnx = 0
         self.dirny = 1
 
+        print("Corpse size:", len(corpse))
+
+        for c in corpse:
+            print("Adding snack to", c.pos)
+            snacks.append(cube(c.pos, color=(0,255,0)))
+
     def addCube(self):
         tail = self.body[-1]
         dx, dy = tail.dirnx, tail.dirny
 
         if dx == 1 and dy == 0:
-            self.body.append(cube((tail.pos[0]-1,tail.pos[1])))
+            self.body.append(cube((tail.pos[0]-1,tail.pos[1]), color=self.color))
         elif dx == -1 and dy == 0:
-            self.body.append(cube((tail.pos[0]+1,tail.pos[1])))
+            self.body.append(cube((tail.pos[0]+1,tail.pos[1]), color=self.color))
         elif dx == 0 and dy == 1:
-            self.body.append(cube((tail.pos[0],tail.pos[1]-1)))
+            self.body.append(cube((tail.pos[0],tail.pos[1]-1), color=self.color))
         elif dx == 0 and dy == -1:
-            self.body.append(cube((tail.pos[0],tail.pos[1]+1)))
+            self.body.append(cube((tail.pos[0],tail.pos[1]+1), color=self.color))
 
         self.body[-1].dirnx = dx
         self.body[-1].dirny = dy        
 
     def draw(self, surface):
-        print("TRYNA DRAW:", list(map(lambda z:z.pos,self.body)))
         for i, c in enumerate(self.body):
             if i ==0:
                 c.draw(surface, True)
@@ -136,13 +143,15 @@ def drawGrid(w, rows, surface):
         
 
 def redrawWindow(surface):
-    global rows, width, snakes, snack
+    global rows, width, snakes, snacks
     surface.fill((0,0,0))
 
     for s in snakes:        
         s.draw(surface)
 
-    snack.draw(surface)
+    for s in snacks:
+        s.draw(surface)
+
     drawGrid(width,rows, surface)
     pygame.display.update()
 
@@ -172,17 +181,16 @@ def message_box(subject, content):
         pass
 
 def main():
-    global width, rows, snakes, snack
+    global width, rows, snakes, snacks
     width = 500
     rows = 20
     win = pygame.display.set_mode((width, width))
     snakes = []
     snakes.append(snake((255,0,0), (10,10)))
-    snakes.append(snake((0,0,255), (20,20)))
-    snakes.append(snake((255,0,255), (30,30)))
-    snack = cube(randomSnack(rows, snakes[0]), color=(0,255,0))
-    flag = True
+    snacks = [] 
+    snacks.append(cube(randomSnack(rows, snakes[0]), color=(0,255,0)))
 
+    flag = True
     clock = pygame.time.Clock()
 
     spawnSnack = False
@@ -194,24 +202,36 @@ def main():
         pygame.time.delay(50)
         clock.tick(10)
 
-        # Snakes moves
         for s in snakes:
+            # Snakes moves
             s.move()
 
-        # If snake eats a snack
-            if s.body[0].pos == snack.pos:
-                spawnSnack = True
+            # If snake eats a snack
+            if s.body[0].pos in list(map(lambda z:z.pos,snacks)):
                 snackTime = pygame.time.get_ticks()
 
                 s.addCube()
-                snack = cube((-1, -1))
+                for sn in snacks:
+                    if (sn.pos == s.body[0].pos):
+                        snacks.remove(sn)
+
+        if len(snacks) == 0:
+            spawnSnack = True
 
         # If it has to spawn a snack
         if spawnSnack:
             if pygame.time.get_ticks() - snackTime >= 500:
-                snack = cube(randomSnack(rows, snakes[0]), color=(0,255,0))
+                snacks.append(cube(randomSnack(rows, snakes[0]), color=(0,255,0)))
                 spawnSnack = False
 
+        for x in range(len(snakes[0].body)):
+            if snakes[0].body[x].pos in list(map(lambda z:z.pos,snakes[0].body[x+1:])):
+                print('Score: ', len(snakes[0].body))
+                message_box('You Lost!', 'Play again...')
+                snakes[0].reset((10,10))                
+                break
+
+        """
         for y in range(len(snakes)):
             print("y =", y)
             for x in range(len(snakes[y].body)):
@@ -225,6 +245,7 @@ def main():
                         message_box('You Lost!', 'Play again...')
                         snakes[y].reset((10,10))
                         break
+        """
             
         redrawWindow(win)      
         flag = True  
