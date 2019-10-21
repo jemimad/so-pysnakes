@@ -29,7 +29,7 @@ def message_box(subject, content):
         pass
 
 class square(object):
-    def __init__(self, position, color=(0,0,0), direction=(0,0)):
+    def __init__(self, position, color=(0,0,0), direction=(1,0)):
         self.position = position
         self.color = color
         self.direction = direction        

@@ -10,63 +10,36 @@ import pygame
 import tkinter as tk
 from tkinter import messagebox
 
-class cube(object):
-    rows = 20
-    w = 500
-    def __init__(self,start,dirnx=1,dirny=0,color=(255,0,0)):
-        self.pos = start
-        self.dirnx = 1
-        self.dirny = 0
-        self.color = color
-        
-    def move(self, dirnx, dirny):
-        self.dirnx = dirnx
-        self.dirny = dirny
-        self.pos = (self.pos[0] + self.dirnx, self.pos[1] + self.dirny)
-
-    def draw(self, surface, eyes=False):
-        dis = self.w // self.rows
-        i = self.pos[0]
-        j = self.pos[1]
-
-        pygame.draw.rect(surface, self.color, (i*dis+1,j*dis+1, dis-2, dis-2))
-        if eyes:
-            centre = dis//2
-            radius = 3
-            circleMiddle = (i*dis+centre-radius,j*dis+8)
-            circleMiddle2 = (i*dis + dis -radius*2, j*dis+8)
-            pygame.draw.circle(surface, (0,0,0), circleMiddle, radius)
-            pygame.draw.circle(surface, (0,0,0), circleMiddle2, radius)
-
 class snake(object):
     def __init__(self, color, pos):
         self.body = []
         self.turns = {}
         self.color = color
-        self.head = cube(pos, color=self.color)
+        self.head = square(pos, color=self.color)
         self.body.append(self.head)
-        self.addCube()
-        self.addCube()
+        self.addSquare()
+        self.addSquare()
         self.dirnx = 0
         self.dirny = 1
 
-    def addCube(self):
+    def addSquare(self):
         tail = self.body[-1]
-        dx, dy = tail.dirnx, tail.dirny
+        dx, dy = tail.direction[0], tail.direction[1]
 
         if dx == 1 and dy == 0:
-            self.body.append(cube((tail.pos[0]-1,tail.pos[1]), color=self.color))
+            self.body.append(square((tail.position[0]-1,tail.position[1]), color=self.color))
         elif dx == -1 and dy == 0:
-            self.body.append(cube((tail.pos[0]+1,tail.pos[1]), color=self.color))
+            self.body.append(square((tail.position[0]+1,tail.position[1]), color=self.color))
         elif dx == 0 and dy == 1:
-            self.body.append(cube((tail.pos[0],tail.pos[1]-1), color=self.color))
+            self.body.append(square((tail.position[0],tail.position[1]-1), color=self.color))
         elif dx == 0 and dy == -1:
-            self.body.append(cube((tail.pos[0],tail.pos[1]+1), color=self.color))
+            self.body.append(square((tail.position[0],tail.position[1]+1), color=self.color))
 
-        self.body[-1].dirnx = dx
-        self.body[-1].dirny = dy 
+        self.body[-1].direction = (dx, dy)
 
     def move(self):
+        global rows
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -77,47 +50,47 @@ class snake(object):
                 if keys[pygame.K_LEFT]:
                     self.dirnx = -1
                     self.dirny = 0
-                    self.turns[self.head.pos[:]] = [self.dirnx, self.dirny]
+                    self.turns[self.head.position[:]] = [self.dirnx, self.dirny]
 
                 elif keys[pygame.K_RIGHT]:
                     self.dirnx = 1
                     self.dirny = 0
-                    self.turns[self.head.pos[:]] = [self.dirnx, self.dirny]
+                    self.turns[self.head.position[:]] = [self.dirnx, self.dirny]
 
                 elif keys[pygame.K_UP]:
                     self.dirnx = 0
                     self.dirny = -1
-                    self.turns[self.head.pos[:]] = [self.dirnx, self.dirny]
+                    self.turns[self.head.position[:]] = [self.dirnx, self.dirny]
 
                 elif keys[pygame.K_DOWN]:
                     self.dirnx = 0
                     self.dirny = 1
-                    self.turns[self.head.pos[:]] = [self.dirnx, self.dirny]
+                    self.turns[self.head.position[:]] = [self.dirnx, self.dirny]
 
         for i, c in enumerate(self.body):
-            p = c.pos[:]
+            p = c.position[:]
             if p in self.turns:
                 turn = self.turns[p]
                 c.move(turn[0],turn[1])
                 if i == len(self.body)-1:
                     self.turns.pop(p)
             else:
-                if c.dirnx == -1 and c.pos[0] <= 0: c.pos = (c.rows-1, c.pos[1])
-                elif c.dirnx == 1 and c.pos[0] >= c.rows-1: c.pos = (0,c.pos[1])
-                elif c.dirny == 1 and c.pos[1] >= c.rows-1: c.pos = (c.pos[0], 0)
-                elif c.dirny == -1 and c.pos[1] <= 0: c.pos = (c.pos[0],c.rows-1)
-                else: c.move(c.dirnx,c.dirny)        
+                if c.direction[0] == -1 and c.position[0] <= 0: c.position = (rows-1, c.position[1])
+                elif c.direction[0] == 1 and c.position[0] >= rows-1: c.position = (0,c.position[1])
+                elif c.direction[1] == 1 and c.position[1] >= rows-1: c.position = (c.position[0], 0)
+                elif c.direction[1] == -1 and c.position[1] <= 0: c.position = (c.position[0],rows-1)
+                else: c.move(c.direction[0],c.direction[1])        
 
     def reset(self, pos):
         global snacks
-        self.addCube()
+        self.addSquare()
         corpse = self.body
 
-        self.head = cube(pos)
+        self.head = square(pos)
         self.body = []
         self.body.append(self.head)
-        self.addCube()
-        self.addCube()
+        self.addSquare()
+        self.addSquare()
         self.turns = {}
         self.dirnx = 0
         self.dirny = 1
@@ -125,8 +98,8 @@ class snake(object):
         print("Corpse size:", len(corpse))
 
         for c in corpse:
-            print("Adding snack to", c.pos)
-            snacks.append(cube(c.pos, color=(0,255,0)))
+            print("Adding snack to", c.position)
+            snacks.append(square(c.position, color=(0,255,0)))
 
     def get_body(self):
         global SNAKE_COLORS
@@ -134,7 +107,7 @@ class snake(object):
         body_array = []
 
         for piece in self.body:
-            body_array.append(square(piece.pos, color=piece.color))
+            body_array.append(square(piece.position, color=piece.color))
 
         return body_array
 
@@ -144,8 +117,11 @@ def randomSnack(rows):
         
     return (x,y)
 
+def spawnSnake():
+    return
+
 class square(object):
-    def __init__(self, position, color=(0,0,0), direction=(0,0)):
+    def __init__(self, position, color=(0,0,0), direction=(1,0)):
         self.position = position
         self.color = color
         self.direction = direction
@@ -156,7 +132,8 @@ class snapshot(object):
         self.snacks = snacks
 
 def main ():
-    global SNAKE_COLORS
+    global SNAKE_COLORS, rows
+
     PORT = 65433
     SNACK_COLOR = (0, 255, 0)
     SNAKE_COLORS = [(255, 0, 0), (0, 0, 255)]
@@ -184,6 +161,7 @@ def main ():
                     conn, info = sock.accept()
                     read_list.append(conn)
                     print("Connection received from ", info)
+                    spawnSnake()
                 else:
                     data = sock.recv(1024)
                     if data:
@@ -233,7 +211,7 @@ def randomSnack(rows, item):
             if s.body[0].pos in list(map(lambda z:z.pos,snacks)):
                 snackTime = pygame.time.get_ticks()
 
-                s.addCube()
+                s.addSquare()
                 for sn in snacks:
                     if (sn.pos == s.body[0].pos):
                         snacks.remove(sn)
