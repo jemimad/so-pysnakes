@@ -3,6 +3,7 @@ import random
 import socket
 import pickle
 import pygame
+import sys
 import tkinter as tk
 from tkinter import messagebox
 
@@ -72,26 +73,31 @@ def main():
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
-        s.sendall(b'Hello, world')
-        data = s.recv(1024)
+        while True:
+            s.sendall(b'Hello, world')
+            data = s.recv(15336)
 
-    snap = pickle.loads(data)
+            # RENDER LOGIC COMES HERE
+            snap = pickle.loads(data)
+            for snack in snap.snacks:
+                drawSquare(snack, window)
 
-    for snack in snap.snacks:
-        drawSquare(snack, window)
+            for snk in snap.snakes:
+                for i, piece in enumerate(snk):
+                    if i ==0:
+                        drawSquare(piece, window, isHead=True)
+                    else:
+                        drawSquare(piece, window)
 
-    for snk in snap.snakes:
-        for i, piece in enumerate(snk):
-            if i ==0:
-                drawSquare(piece, window, isHead=True)
-            else:
-                drawSquare(piece, window)
+            for s in snakes:        
+                s.draw(window)
 
-    for s in snakes:        
-        s.draw(window)
+            drawGrid(width,rows, window)
+            pygame.display.update()
+            print("Frame updated!")
+        
+        s.close()
 
-    drawGrid(width,rows, window)
-    pygame.display.update()
 
     while True:
         continue

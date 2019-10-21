@@ -39,7 +39,7 @@ class snake(object):
 
     def move(self):
         global rows
-
+        """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -66,12 +66,12 @@ class snake(object):
                     self.dirnx = 0
                     self.dirny = 1
                     self.turns[self.head.position[:]] = [self.dirnx, self.dirny]
-
+        """
         for i, c in enumerate(self.body):
             p = c.position[:]
             if p in self.turns:
                 turn = self.turns[p]
-                c.move(turn[0],turn[1])
+                c.position = (c.position[0] + turn[0], c.position[1] + turn[1])
                 if i == len(self.body)-1:
                     self.turns.pop(p)
             else:
@@ -79,7 +79,7 @@ class snake(object):
                 elif c.direction[0] == 1 and c.position[0] >= rows-1: c.position = (0,c.position[1])
                 elif c.direction[1] == 1 and c.position[1] >= rows-1: c.position = (c.position[0], 0)
                 elif c.direction[1] == -1 and c.position[1] <= 0: c.position = (c.position[0],rows-1)
-                else: c.move(c.direction[0],c.direction[1])        
+                else: c.position = (c.position[0] + c.direction[0], c.position[1] + c.direction[1])
 
     def reset(self, pos):
         global snacks
@@ -117,8 +117,8 @@ def randomSnack(rows):
         
     return (x,y)
 
-def spawnSnake():
-    return
+def spawnSnake(list, color, number):
+    list.append(snake(color, (10+number,10+number)))  
 
 class square(object):
     def __init__(self, position, color=(0,0,0), direction=(1,0)):
@@ -128,49 +128,78 @@ class square(object):
 
 class snapshot(object):
     def __init__(self, snakes, snacks):
-        self.snakes = snakes
+        self.snakes = []
         self.snacks = snacks
+
+        for snk in snakes:
+            self.snakes.append(snk.get_body())
 
 def main ():
     global SNAKE_COLORS, rows
 
     PORT = 65433
     SNACK_COLOR = (0, 255, 0)
-    SNAKE_COLORS = [(255, 0, 0), (0, 0, 255)]
+    SNAKE_COLORS = [(255, 0, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255)]
 
     rows = 20
     snacks = []
     snakes = []
 
-    snakes.append(snake(SNAKE_COLORS[0], (10,10)).get_body())  
-    snakes.append(snake(SNAKE_COLORS[1], (11,11)).get_body())  
-    snacks.append(square(randomSnack(rows), SNACK_COLOR))   
+    max_players = 4
+    player_count = 0
 
     snap = snapshot(snakes, snacks)  
     
-    read_list = []
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.setblocking(0)
-        s.bind(('', PORT))
-        s.listen(5)
-        read_list.append(s)
+    inputs = []
+    outputs = []
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+        server.setblocking(0)
+        server.bind(('', PORT))
+        server.listen(5)
+        inputs.append(server)
+        clock = pygame.time.Clock()
+
         while True :
-            readable, writeable, error = select.select(read_list,[],[])
+            pygame.time.delay(500)
+            clock.tick(10)
+            snacks.append(square(randomSnack(rows), SNACK_COLOR))   
+
+            for snk in snakes:
+                snk.move()
+
+            readable, writeable, error = select.select(inputs,outputs,[])            
             for sock in readable:
-                if sock is s:
+                if sock is server:
+                    # WHAT HAPPENS WHEN NEW CLIENT CONNECTS
                     conn, info = sock.accept()
-                    read_list.append(conn)
+                    inputs.append(conn)
                     print("Connection received from ", info)
-                    spawnSnake()
+
+                    if player_count < max_players:
+                        spawnSnake(snakes, SNAKE_COLORS[player_count], player_count)                        
+                        player_count+=1
+                    else:
+                        sock.close()
+                        inputs.remove(sock)
                 else:
                     data = sock.recv(1024)
                     if data:
+                        # RECEIVE DATA FROM CLIENT
                         print("Received", repr(data))
-                        data_string = pickle.dumps(snap)
-                        sock.send(data_string)
+                        if sock not in outputs:
+                            outputs.append(sock)                        
                     else:
+                        if sock in outputs:
+                            outputs.remove(sock)
+
+                        inputs.remove(sock)
                         sock.close()
-                        read_list.remove(sock)
+
+            for s in writeable:
+                # SEND DATA TO CLIENT
+                snap = snapshot(snakes, snacks)  
+                data_string = pickle.dumps(snap)
+                s.send(data_string)
 
 main()
 
