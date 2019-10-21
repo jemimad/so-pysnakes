@@ -145,10 +145,9 @@ def randomSnack(rows):
     return (x,y)
 
 class square(object):
-    def __init__(self, position, color=(0,0,0), isHead=False, direction=(0,0)):
+    def __init__(self, position, color=(0,0,0), direction=(0,0)):
         self.position = position
         self.color = color
-        self.isHead = isHead
         self.direction = direction
 
 class snapshot(object):
@@ -196,3 +195,81 @@ def main ():
                         read_list.remove(sock)
 
 main()
+
+
+"""
+def randomSnack(rows, item):
+    positions = item.body
+
+    while True:
+        x = random.randrange(rows)
+        y = random.randrange(rows)
+        if len(list(filter(lambda z:z.pos == (x,y), positions))) > 0:
+            continue
+        else:
+            break
+        
+    return (x,y)
+"""
+
+"""
+    flag = True
+    clock = pygame.time.Clock()
+
+    spawnSnack = False
+    snackTime = 0
+    
+    # Game loop
+    while flag:
+        # Fix FPS
+        pygame.time.delay(50)
+        clock.tick(10)
+
+        for s in snakes:
+            # Snakes moves
+            s.move()
+
+            # If snake eats a snack
+            if s.body[0].pos in list(map(lambda z:z.pos,snacks)):
+                snackTime = pygame.time.get_ticks()
+
+                s.addCube()
+                for sn in snacks:
+                    if (sn.pos == s.body[0].pos):
+                        snacks.remove(sn)
+
+        if len(snacks) == 0:
+            spawnSnack = True
+
+        # If it has to spawn a snack
+        if spawnSnack:
+            if pygame.time.get_ticks() - snackTime >= 500:
+                snacks.append(cube(randomSnack(rows, snakes[0]), color=(0,255,0)))
+                spawnSnack = False
+
+        for x in range(len(snakes[0].body)):
+            if snakes[0].body[x].pos in list(map(lambda z:z.pos,snakes[0].body[x+1:])):
+                print('Score: ', len(snakes[0].body))
+                message_box('You Lost!', 'Play again...')
+                snakes[0].reset((10,10))                
+                break
+        
+        for y in range(len(snakes)):
+            print("y =", y)
+            for x in range(len(snakes[y].body)):
+                print("x =", x)
+                for w in range(y+1, len(snakes)):
+                    print("w =", w)
+                    print(snakes[y].body[x].pos, "=", list(map(lambda z:z.pos,snakes[w].body[0:])))
+
+                    if snakes[y].body[x].pos in list(map(lambda z:z.pos,snakes[w].body)):
+                        print('Score: ', len(snakes[y].body) - 3)
+                        message_box('You Lost!', 'Play again...')
+                        snakes[y].reset((10,10))
+                        break
+            
+        redrawWindow(win)      
+        flag = True  
+    pass
+
+    """
