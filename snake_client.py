@@ -62,10 +62,13 @@ def main():
     HOST = '127.0.0.1'  # The server's hostname or IP address
     PORT = 65435        # The port used by the server
 
+    if len(sys.argv) == 3:
+        HOST = sys.argv[1]
+        PORT = int(sys.argv[2])
+
     snacks = []
     snakes = [] 
     
-
     width = 500
     rows = 20
 

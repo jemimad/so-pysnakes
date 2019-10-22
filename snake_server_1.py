@@ -120,7 +120,7 @@ class snapshot(object):
 def main ():
     global SNAKE_COLORS, rows
 
-    PORT = 65435
+    PORT = 65432
     SNACK_COLOR = (0, 255, 0)
     SNAKE_COLORS = [(255, 0, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255)]
 
@@ -131,6 +131,8 @@ def main ():
 
     max_players = 4
     player_count = 0
+    spawnSnack = False
+    snackTime = 0
 
     snap = snapshot(snakes, snacks)  
     
@@ -150,6 +152,24 @@ def main ():
 
             for snk in snakes:
                 snk.move()
+
+            for snack in snacks:
+                for snk in snakes:
+                    print(snack.position, "==", snk.body[0].position)
+                    if snack.position == snk.body[0].position:
+                        print("Comeu!")
+                        snk.addSquare()
+                        snacks.remove(snack)
+                        snackTime = pygame.time.get_ticks()
+
+            if len(snacks) == 0:
+                spawnSnack = True
+
+            # If it has to spawn a snack
+            if spawnSnack:
+                if pygame.time.get_ticks() - snackTime >= 500:
+                    snacks.append(square(randomSnack(rows), SNACK_COLOR))
+                    spawnSnack = False
 
             readable, writeable, error = select.select(inputs,outputs,[])            
             for sock in readable:
