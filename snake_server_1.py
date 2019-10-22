@@ -120,13 +120,14 @@ class snapshot(object):
 def main ():
     global SNAKE_COLORS, rows
 
-    PORT = 65433
+    PORT = 65435
     SNACK_COLOR = (0, 255, 0)
     SNAKE_COLORS = [(255, 0, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255)]
 
     rows = 20
     snacks = []
     snakes = []
+    snk_id = {} 
 
     max_players = 4
     player_count = 0
@@ -160,7 +161,9 @@ def main ():
                     print("Connection received from ", info)
 
                     if player_count < max_players:
-                        spawnSnake(snakes, SNAKE_COLORS[player_count], player_count)                        
+                        spawnSnake(snakes, SNAKE_COLORS[player_count], player_count)  
+                        snk_id[info] = player_count
+                        print(snk_id)                      
                         player_count+=1
                     else:
                         sock.close()
@@ -169,10 +172,10 @@ def main ():
                     raw_data = sock.recv(2048)                    
                     if raw_data:
                         # RECEIVE DATA FROM CLIENT  
-                        input_data = pickle.loads(raw_data)    
-                        
-                        for snk in snakes:
-                            snk.move(input_data)                   
+                        input_data = pickle.loads(raw_data)  
+                        #print(snk_id[input_data[1]])
+
+                        snakes[snk_id[input_data[1]]].move(input_data[0])         
 
                         if sock not in outputs:
                             outputs.append(sock)                        

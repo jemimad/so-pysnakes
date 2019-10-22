@@ -60,10 +60,11 @@ def main():
     global width, rows, snakes, snacks
 
     HOST = '127.0.0.1'  # The server's hostname or IP address
-    PORT = 65433        # The port used by the server
+    PORT = 65435        # The port used by the server
 
     snacks = []
-    snakes = []  
+    snakes = [] 
+    
 
     width = 500
     rows = 20
@@ -72,6 +73,7 @@ def main():
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
+        my_ip, my_port = s.getsockname()
 
         while True:
             data = s.recv(15336)
@@ -117,7 +119,7 @@ def main():
                         input_key = (0, 1)
 
                 if input_key != (-1, -1):
-                    input_string = pickle.dumps(input_key)
+                    input_string = pickle.dumps((input_key, (my_ip, my_port)))
                     s.sendall(input_string)
                 
         s.close()
