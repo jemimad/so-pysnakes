@@ -37,49 +37,32 @@ class snake(object):
 
         self.body[-1].direction = (dx, dy)
 
-    def move(self):
+    def move(self, dir=(-1, -1)):
         global rows
-        """
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
 
-            keys = pygame.key.get_pressed()
+        if dir != (-1, -1):
+            self.direction = dir
+            self.turns[self.head.position[:]] = [self.direction[0], self.direction[1]]
 
-            for key in keys:
-                if keys[pygame.K_LEFT]:
-                    self.dirnx = -1
-                    self.dirny = 0
-                    self.turns[self.head.position[:]] = [self.dirnx, self.dirny]
-
-                elif keys[pygame.K_RIGHT]:
-                    self.dirnx = 1
-                    self.dirny = 0
-                    self.turns[self.head.position[:]] = [self.dirnx, self.dirny]
-
-                elif keys[pygame.K_UP]:
-                    self.dirnx = 0
-                    self.dirny = -1
-                    self.turns[self.head.position[:]] = [self.dirnx, self.dirny]
-
-                elif keys[pygame.K_DOWN]:
-                    self.dirnx = 0
-                    self.dirny = 1
-                    self.turns[self.head.position[:]] = [self.dirnx, self.dirny]
-        """
         for i, c in enumerate(self.body):
             p = c.position[:]
             if p in self.turns:
                 turn = self.turns[p]
+                c.direction = turn
                 c.position = (c.position[0] + turn[0], c.position[1] + turn[1])
                 if i == len(self.body)-1:
                     self.turns.pop(p)
             else:
-                if c.direction[0] == -1 and c.position[0] <= 0: c.position = (rows-1, c.position[1])
-                elif c.direction[0] == 1 and c.position[0] >= rows-1: c.position = (0,c.position[1])
-                elif c.direction[1] == 1 and c.position[1] >= rows-1: c.position = (c.position[0], 0)
-                elif c.direction[1] == -1 and c.position[1] <= 0: c.position = (c.position[0],rows-1)
-                else: c.position = (c.position[0] + c.direction[0], c.position[1] + c.direction[1])
+                if c.direction[0] == -1 and c.position[0] <= 0:
+                    c.position = (rows-1, c.position[1])
+                elif c.direction[0] == 1 and c.position[0] >= rows-1:
+                    c.position = (0,c.position[1])
+                elif c.direction[1] == 1 and c.position[1] >= rows-1:
+                    c.position = (c.position[0], 0)
+                elif c.direction[1] == -1 and c.position[1] <= 0:
+                    c.position = (c.position[0],rows-1)
+                else:
+                    c.position = (c.position[0] + c.direction[0], c.position[1] + c.direction[1])
 
     def reset(self, pos):
         global snacks
@@ -158,11 +141,11 @@ def main ():
         server.listen(5)
         inputs.append(server)
         clock = pygame.time.Clock()
+        snacks.append(square(randomSnack(rows), SNACK_COLOR))
 
         while True :
             pygame.time.delay(500)
-            clock.tick(10)
-            snacks.append(square(randomSnack(rows), SNACK_COLOR))   
+            clock.tick(10)               
 
             for snk in snakes:
                 snk.move()
@@ -173,6 +156,7 @@ def main ():
                     # WHAT HAPPENS WHEN NEW CLIENT CONNECTS
                     conn, info = sock.accept()
                     inputs.append(conn)
+                    outputs.append(conn)
                     print("Connection received from ", info)
 
                     if player_count < max_players:
@@ -182,10 +166,14 @@ def main ():
                         sock.close()
                         inputs.remove(sock)
                 else:
-                    data = sock.recv(1024)
-                    if data:
-                        # RECEIVE DATA FROM CLIENT
-                        print("Received", repr(data))
+                    raw_data = sock.recv(2048)                    
+                    if raw_data:
+                        # RECEIVE DATA FROM CLIENT  
+                        input_data = pickle.loads(raw_data)    
+                        
+                        for snk in snakes:
+                            snk.move(input_data)                   
+
                         if sock not in outputs:
                             outputs.append(sock)                        
                     else:

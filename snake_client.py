@@ -68,16 +68,16 @@ def main():
     width = 500
     rows = 20
 
-    window = pygame.display.set_mode((width, width))
-    window.fill((0,0,0))
+    window = pygame.display.set_mode((width, width))    
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
+
         while True:
-            s.sendall(b'Hello, world')
             data = s.recv(15336)
 
             # RENDER LOGIC COMES HERE
+            window.fill((0,0,0))
             snap = pickle.loads(data)
             for snack in snap.snacks:
                 drawSquare(snack, window)
@@ -94,14 +94,32 @@ def main():
 
             drawGrid(width,rows, window)
             pygame.display.update()
-            print("Frame updated!")
-        
+
+            # INPUT LOGIC COMES HERE
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+
+                keys = pygame.key.get_pressed()
+                input_key = (-1, -1)
+                
+                for key in keys:
+                    if keys[pygame.K_LEFT]:
+                        input_key = (-1, 0)
+
+                    elif keys[pygame.K_RIGHT]:
+                        input_key = (1, 0)
+
+                    elif keys[pygame.K_UP]:
+                        input_key = (0, -1)
+
+                    elif keys[pygame.K_DOWN]:
+                        input_key = (0, 1)
+
+                if input_key != (-1, -1):
+                    input_string = pickle.dumps(input_key)
+                    s.sendall(input_string)
+                
         s.close()
-
-
-    while True:
-        continue
-
-
 
 main()
